@@ -18,6 +18,8 @@ class X11Desktop:
         self.mouse = self.keyboard = None
         self._closed = False
         self._check_environment()
+        self.core_pointer = 2
+        self.core_keyboard = 3
         self._create_master()
         try:
             self._create_virtual_devices()
@@ -54,6 +56,10 @@ class X11Desktop:
         deadline = time.time() + 3
         while time.time() < deadline:
             output = self._devices()
+            cp = re.search(r"Virtual core pointer\s+id=(\d+)", output)
+            ck = re.search(r"Virtual core keyboard\s+id=(\d+)", output)
+            if cp: self.core_pointer = int(cp.group(1))
+            if ck: self.core_keyboard = int(ck.group(1))
             p = re.search(r"DesktopMCP AI pointer(?: \(\d+\))? id=(\d+)", output)
             k = re.search(r"DesktopMCP AI keyboard(?: \(\d+\))? id=(\d+)", output)
             if p and k:
@@ -148,7 +154,9 @@ class X11Desktop:
         if not self.keyboard:
             raise DesktopError("Virtual keyboard is not initialised.")
         mapping = {}
-        for ch, code in zip("abcdefghijklmnopqrstuvwxyz", range(e.KEY_A, e.KEY_Z + 1)):
+        for ch in "abcdefghijklmnopqrstuvwxyz":
+            code = getattr(e, "KEY_" + ch.upper())
+            mapping[ch], mapping[ch.upper()] = (code, False), (code, True)
             mapping[ch], mapping[ch.upper()] = (code, False), (code, True)
         digit_codes = [e.KEY_1,e.KEY_2,e.KEY_3,e.KEY_4,e.KEY_5,e.KEY_6,e.KEY_7,e.KEY_8,e.KEY_9,e.KEY_0]
         for ch, code in zip("1234567890", digit_codes):
@@ -193,7 +201,7 @@ class X11Desktop:
         if self.master_pointer is not None:
             try:
                 self._run(["xinput", "remove-master", str(self.master_pointer),
-                           "AttachToMaster", "2", "3"], check=False)
+                           "AttachToMaster", str(self.core_pointer), str(self.core_keyboard)], check=False)
             except Exception:
                 pass
 
