@@ -54,8 +54,8 @@ class X11Desktop:
         deadline = time.time() + 3
         while time.time() < deadline:
             output = self._devices()
-            p = re.search(r"DesktopMCP AI pointer\s+id=(\d+)", output)
-            k = re.search(r"DesktopMCP AI keyboard\s+id=(\d+)", output)
+            p = re.search(r"DesktopMCP AI pointer(?: \(\d+\))? id=(\d+)", output)
+            k = re.search(r"DesktopMCP AI keyboard(?: \(\d+\))? id=(\d+)", output)
             if p and k:
                 self.master_pointer, self.master_keyboard = int(p.group(1)), int(k.group(1))
                 return
